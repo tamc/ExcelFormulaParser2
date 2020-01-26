@@ -1,13 +1,59 @@
 import Foundation
 
+enum ExcelToken: Hashable {
+    case literal(Substring, containsEscapeSequence: Bool = false)
+    case string(Substring, containsEscapeSequence: Bool = false)
+    case error(ExcelError)
+    case number(Decimal)
+    case symbol(ExcelSymbol)
+}
+
+enum ExcelError: String, Hashable {
+    case ref = "#REF!"
+    case name = "#NAME?"
+    case value = "#VALUE!"
+    case div0 = "#DIV/0!"
+    case na = "#N/A"
+    case num = "#NUM!"
+}
+
+enum ExcelSymbol: Hashable {
+    case maths(ExcelMathOperator)
+    case open(ExcelOpenClosable)
+    case close(ExcelOpenClosable)
+    case ampersand
+    case comma
+    case bang
+    case colon
+}
+
+enum ExcelMathOperator: Hashable {
+    case add
+    case subtract
+    case multiply
+    case divide
+    case power
+}
+
+enum ExcelOpenClosable: Hashable {
+    case bracket
+    case squareBracket
+}
+
 struct Tokenizer: Sequence, IteratorProtocol {
-    typealias Element = Substring
+    typealias Element = ExcelToken
     
     private let s: String
-    /// Token start
+    /// Current token start
     private var ts: String.Index
-    /// Token end
+    /// Current token end
     private var te: String.Index
+    /// Current token range
+    private var tr: Range<String.Index> { ts..<te }
+    /// Current token substring
+    private var token: Substring { s[tr] }
+    /// Next character (warning, will fatal error if te >= s.endIndex
+    private var nextCharacter: Character { s[te] }
         
     init(_ s: String) {
         self.s = s
@@ -15,9 +61,9 @@ struct Tokenizer: Sequence, IteratorProtocol {
         self.te = s.startIndex
     }
         
-    mutating func next() -> Substring? {
-        while ts < s.endIndex && te < s.endIndex {
-            switch s[te] {
+    mutating func next() -> ExcelToken? {
+        while isAnotherToken() {
+            switch nextCharacter {
             case "#": return excelError()
             case "\"": return excelString()
             case "'": return excelEscapedLiteral()
@@ -25,105 +71,171 @@ struct Tokenizer: Sequence, IteratorProtocol {
             case CharacterSet.excelSymbols: return symbol()
             case CharacterSet.whitespacesAndNewlines: skipWhitespace()
             case CharacterSet.excelLiteralFirstCharacter: return literal()
-            default: return nil
+            default:
+                fail("Could not identify first character of the token")
             }
         }
         return nil
     }
     
-    mutating private func number() -> Substring? {
-        while te < s.endIndex, CharacterSet.decimalDigits.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
+    mutating private func number() -> ExcelToken? {
+        extendToken(while: .decimalDigits)
+        if extendToken(if: .decimalPoint) {
+            extendToken(while: .decimalDigits)
         }
-        if te < s.endIndex, s[te] == "." {
-            te = s.index(te, offsetBy: 1)
+        if extendToken(if: .decimalExponent) {
+            extendToken(if: .decimalPlusMinus)
+            extendToken(while: .decimalDigits)
         }
-        while te < s.endIndex, CharacterSet.decimalDigits.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
+        guard let n = Decimal(string: String(token)) else {
+            fail("Could not convert \(token) into a Decimal")
         }
-        if te < s.endIndex, (s[te] == "E" || s[te] == "e") {
-            te = s.index(te, offsetBy: 1)
-            if te < s.endIndex, s[te] == "-" {
-                te = s.index(te, offsetBy: 1)
+        startNextToken()
+        return .number(n)
+    }
+    
+    mutating private func symbol() -> ExcelToken? {
+        extendToken(if: .excelSymbols)
+
+        var result: ExcelSymbol
+        switch token {
+            
+        case "+": result = .maths(.add)
+        case "-": result = .maths(.subtract)
+        case "*": result = .maths(.multiply)
+        case "/": result = .maths(.divide)
+        case "^": result = .maths(.power)
+            
+        case "(": result = .open(.bracket)
+        case ")": result = .close(.bracket)
+        case "[": result = .open(.squareBracket)
+        case "]": result = .close(.squareBracket)
+            
+        case "!": result = .bang
+        case ":": result = .colon
+        case ",": result = .comma
+        case "&": result = .ampersand
+
+        default:
+            fail("Could not convert \(token) into an ExcelSymbol")
+        }
+        startNextToken()
+        return .symbol(result)
+    }
+    
+    mutating private func literal() -> ExcelToken? {
+        extendToken(while: .excelLiteral)
+        let string = token
+        startNextToken()
+        return .literal(string, containsEscapeSequence: false)
+    }
+    
+    mutating private func excelError() -> ExcelToken? {
+        extendToken(while: .excelError)
+        guard let e = ExcelError.init(rawValue: String(token)) else {
+            fail("Could not convert \(token) into an ExcelError")
+        }
+        startNextToken()
+        return .error(e)
+    }
+    
+    mutating private func excelEscapedLiteral() -> ExcelToken? {
+        let (result, containsEscapeSequence) =  escapedString(marker: "'")
+        guard let s = result else { return nil }
+        return .literal(s, containsEscapeSequence: containsEscapeSequence)
+    }
+    
+    mutating private func excelString() -> ExcelToken? {
+        let (result, containsEscapeSequence) = escapedString(marker: "\"")
+        guard let s = result else { return nil }
+        return .string(s, containsEscapeSequence: containsEscapeSequence)
+    }
+    
+    mutating private func escapedString(marker: Character) -> (s: Substring?, containsEscapeSequence: Bool) {
+        advanceEnd() // Skip first "
+        advanceStart() // Skip first "
+        
+        var containsEscapeSequence = false
+        while canAdvanceEnd() {
+            while canAdvanceEnd(), nextCharacter != marker {
+                advanceEnd()
             }
-            if te < s.endIndex, s[te] == "+" {
-                te = s.index(te, offsetBy: 1)
-            }
-        }
-        while te < s.endIndex, CharacterSet.decimalDigits.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
-        }
-        let result = s[ts..<te]
-        ts = te
-        return result
-    }
-    
-    mutating private func symbol() -> Substring? {
-        if te < s.endIndex, CharacterSet.excelSymbols.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
-        }
-        let result = s[ts..<te]
-        ts = te
-        return result
-    }
-    
-    mutating private func literal() -> Substring? {
-        while te < s.endIndex, CharacterSet.excelLiteral.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
-        }
-        let result = s[ts..<te]
-        ts = te
-        return result
-    }
-    
-    mutating private func excelError() -> Substring? {
-        while te < s.endIndex, CharacterSet.excelError.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
-        }
-        let result = s[ts..<te]
-        ts = te
-        return result
-    }
-    
-    mutating private func excelEscapedLiteral() -> Substring? {
-        return escapedString(marker: "'")
-    }
-    
-    mutating private func excelString() -> Substring? {
-        return escapedString(marker: "\"")
-    }
-    
-    mutating private func escapedString(marker: Character) -> Substring? {
-        te = s.index(te, offsetBy: 1) // First "
-        ts = s.index(ts, offsetBy: 1) // First "
-        while te < s.endIndex {
-            while te < s.endIndex, s[te] != marker {
-                te = s.index(te, offsetBy: 1) // First "
-            }
-            if te < s.endIndex {
-                let peek = s.index(te, offsetBy: 1)
-                if peek < s.endIndex, s[peek] == marker { // A "", which means an escaped string
-                    te = s.index(te, offsetBy: 2) // Skip both " in ""
-                    continue
-                }
+            // Check if we have hit a double marker (like "") in which case is an escaped marker in Excel.
+            if peekNextCharacter() == marker {
+                advanceEnd(by: 2) // Skip both " in ""
+                containsEscapeSequence = true
+                continue
             }
             break
         }
-        let result = s[ts..<te]
-        if te < s.endIndex {
-            te = s.index(te, offsetBy: 1) // Last "
+        let string = token
+        if canAdvanceEnd() {
+            advanceEnd() // Skip closing "
         }
-        ts = te
-        return result
+        startNextToken()
+        return (string, containsEscapeSequence)
     }
     
     mutating private func skipWhitespace() {
-        while te < s.endIndex, CharacterSet.whitespacesAndNewlines.containsUnicodeScalars(of: s[te]) {
-            te = s.index(te, offsetBy: 1)
-        }
+        extendToken(while: .whitespacesAndNewlines)
+        /// Note:  we do not return the whitespace
+        startNextToken()
+    }
+    
+    mutating private func startNextToken() {
         ts = te
     }
     
+    /// Extends the token to cover any subsequent characters that are in the characterset
+    mutating private func extendToken(while characterset: CharacterSet) {
+        while canAdvanceEnd(), characterset.containsUnicodeScalars(of: nextCharacter) {
+            advanceEnd()
+        }
+    }
+    
+    /// If the next character is in the characterset, extends the token to cover that character and returns true
+    /// Otherwise leaves the token as is and returns false
+    @discardableResult
+    mutating private func extendToken(if characterset: CharacterSet) -> Bool {
+        if canAdvanceEnd(), characterset.containsUnicodeScalars(of: nextCharacter) {
+            advanceEnd()
+            return true
+        }
+        return false
+    }
+
+    private func fail(_ message: String, file: StaticString = #file,
+    line: UInt = #line) -> Never {
+        mark(range: tr, in: s)
+        fatalError(message, file: file, line: line)
+    }
+    
+    private mutating func advanceStart() {
+        ts = s.index(ts, offsetBy: 1)
+    }
+    
+    private mutating func advanceEnd(by offset: Int = 1) {
+        te = s.index(te, offsetBy: offset)
+    }
+    
+    private func isAnotherToken() -> Bool {
+        return canAdvanceStart() && canAdvanceEnd()
+    }
+    
+    private func canAdvanceStart() -> Bool {
+        return ts < s.endIndex
+    }
+    
+    private func canAdvanceEnd() -> Bool {
+        return te < s.endIndex
+    }
+    
+    private func peekNextCharacter() -> Character? {
+        guard canAdvanceEnd() else { return nil }
+        let peekIndex = s.index(te, offsetBy: 1)
+        guard peekIndex < s.endIndex else { return nil }
+        return s[peekIndex]
+    }
 
 }
 
@@ -142,4 +254,17 @@ extension CharacterSet {
     static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&")
     static let excelLiteralFirstCharacter = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
     static let excelLiteral = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_.$"))
+    static let decimalPoint = CharacterSet(charactersIn: ".")
+    static let decimalExponent = CharacterSet(charactersIn: "eE")
+    static let decimalPlusMinus = CharacterSet(charactersIn: "+-")
+}
+
+func mark(range: Range<String.Index>, in string: String) {
+    print(string)
+    let marker = String(repeating: " ", count: string.count)
+    let f = range.lowerBound.samePosition(in: marker) ?? marker.startIndex
+    let t = range.upperBound.samePosition(in: marker) ?? marker.endIndex
+    let c = marker.distance(from: f, to: t)
+    let result = marker.replacingCharacters(in: f..<t, with: String(repeating: "^", count: c))
+    print(result)
 }

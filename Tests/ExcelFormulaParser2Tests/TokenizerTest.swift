@@ -7,78 +7,78 @@ final class TokenizerTest: XCTestCase {
         assertTokens([], from: "")
         
         /// Literals
-        assertTokens(["TRUE"], from: "TRUE")
-        assertTokens(["FALSE"], from: "FALSE")
-        assertTokens(["IF"], from: "IF")
-        assertTokens(["_IF"], from: "_IF")
-        assertTokens(["IF2"], from: "IF2")
-        assertTokens(["IF2"], from: "IF2")
-        assertTokens(["IF2.3"], from: "IF2.3")
-        assertTokens(["IF_2.3"], from: "IF_2.3")
+        assertTokens([.literal("TRUE")], from: "TRUE")
+        assertTokens([.literal("FALSE")], from: "FALSE")
+        assertTokens([.literal("IF")], from: "IF")
+        assertTokens([.literal("_IF")], from: "_IF")
+        assertTokens([.literal("IF2")], from: "IF2")
+        assertTokens([.literal("IF2")], from: "IF2")
+        assertTokens([.literal("IF2.3")], from: "IF2.3")
+        assertTokens([.literal("IF_2.3")], from: "IF_2.3")
         
         /// Escaped literals
-        assertTokens(["Sheet 1"], from: "'Sheet 1'")
+        assertTokens([.literal("Sheet 1")], from: "'Sheet 1'")
+        assertTokens([.literal("Sheet ''1''", containsEscapeSequence: true)], from: "'Sheet ''1'''")
         
         /// Errors
-        assertTokens(["#REF!"], from: "#REF!")
-        assertTokens(["#NAME?"], from: "#NAME?")
-        assertTokens(["#VALUE!"], from: "#VALUE!")
-        assertTokens(["#DIV/0!"], from: "#DIV/0!")
-        assertTokens(["#N/A"], from: "#N/A")
-        assertTokens(["#NUM!"], from: "#NUM!")
+        assertTokens([.error(.ref)], from: "#REF!")
+        assertTokens([.error(.name)], from: "#NAME?")
+        assertTokens([.error(.value)], from: "#VALUE!")
+        assertTokens([.error(.div0)], from: "#DIV/0!")
+        assertTokens([.error(.na)], from: "#N/A")
+        assertTokens([.error(.num)], from: "#NUM!")
         
         /// Numbers
-        assertTokens(["1"], from: "1")
-        assertTokens(["1.1"], from: "1.1")
-        assertTokens(["1.1E1"], from: "1.1E1")
-        assertTokens(["1.1E1"], from: "1.1E1")
-        assertTokens(["1.1E-1"], from: "1.1E-1")
-        assertTokens(["1E-1"], from: "1E-1")
-        assertTokens(["1E10"], from: "1E10")
+        assertTokens([.number(1)], from: "1")
+        assertTokens([.number(1.1)], from: "1.1")
+        assertTokens([.number(1.1e1)], from: "1.1E1")
+        assertTokens([.number(1.1e-1)], from: "1.1E-1")
+        assertTokens([.number(1e-1)], from: "1E-1")
+        assertTokens([.number(1e10)], from: "1E10")
         
         /// Symbols
-        assertTokens(["+"], from: "+")
-        assertTokens(["-"], from: "-")
-        assertTokens(["*"], from: "*")
-        assertTokens(["/"], from: "/")
-        assertTokens(["^"], from: "^")
-        assertTokens(["("], from: "(")
-        assertTokens([")"], from: ")")
-        assertTokens(["["], from: "[")
-        assertTokens(["]"], from: "]")
-        assertTokens(["!"], from: "!")
-        assertTokens([":"], from: ":")
-        assertTokens([","], from: ",")
-        assertTokens(["&"], from: "&")
+        assertTokens([.symbol(.maths(.add))], from: "+")
+        assertTokens([.symbol(.maths(.subtract))], from: "-")
+        assertTokens([.symbol(.maths(.multiply))], from: "*")
+        assertTokens([.symbol(.maths(.divide))], from: "/")
+        assertTokens([.symbol(.maths(.power))], from: "^")
+        assertTokens([.symbol(.open(.bracket))], from: "(")
+        assertTokens([.symbol(.close(.bracket))], from: ")")
+        assertTokens([.symbol(.open(.squareBracket))], from: "[")
+        assertTokens([.symbol(.close(.squareBracket))], from: "]")
+        assertTokens([.symbol(.bang)], from: "!")
+        assertTokens([.symbol(.colon)], from: ":")
+        assertTokens([.symbol(.comma)], from: ",")
+        assertTokens([.symbol(.ampersand)], from: "&")
         
         /// Strings
-        assertTokens(["Hello world"], from: "\"Hello world\"")
-        assertTokens(["Hello \"\"world"], from: "\"Hello \"\"world\"")
+        assertTokens([.string("Hello world")], from: "\"Hello world\"")
+        assertTokens([.string("Hello \"\"world",containsEscapeSequence: true)], from: "\"Hello \"\"world\"")
     }
     
     func testBasicSequence() {
-        assertTokens(["1", "+", "1"], from: "1+1")
+        assertTokens([.number(1), .symbol(.maths(.add)), .number(1)], from: "1+1")
     }
     
     func testErrorInSequence() {
-        assertTokens(["#DIV/0!", "+", "1"], from: "#DIV/0!+1")
+        assertTokens([.error(.div0), .symbol(.maths(.add)), .number(1)], from: "#DIV/0!+1")
     }
     
     func testWhitespace() {
-        assertTokens(["A", "B"], from: "A B")
+        assertTokens([.literal("A"), .literal("B")], from: "A B")
     }
 
     func testWhitespaceInMaths() {
-        assertTokens(["3.145e12", "*", "14e-6"], from: " 3.145e12 * 14e-6 ")
+        assertTokens([.number(3.145e12), .symbol(.maths(.multiply)), .number(14e-6)], from: " 3.145e12 * 14e-6 ")
     }
     
     func testWhitespaceInStringJoin() {
-        assertTokens(["A sheet''", "!", "A1", "&", " a string\n\"\"Yes\"\"\n"], from: "'A sheet'''!A1&\" a string\n\"\"Yes\"\"\n")
+        assertTokens([.literal("A sheet''", containsEscapeSequence: true), .symbol(.bang), .literal("A1"), .symbol(.ampersand), .string(" a string\n\"\"Yes\"\"\n", containsEscapeSequence: true)], from: "'A sheet'''!A1&\" a string\n\"\"Yes\"\"\n")
     }
     
-    private func assertTokens(_ expected: [String], from: String, file: StaticString = #file,
+    private func assertTokens(_ expected: [ExcelToken], from: String, file: StaticString = #file,
                               line: UInt = #line) {
-        let result = Array(Tokenizer(from).map({String($0)}))
+        let result = Array(Tokenizer(from))
         XCTAssertEqual(expected, result, "Parsing \(from)", file: file, line: line)
     }
 }
