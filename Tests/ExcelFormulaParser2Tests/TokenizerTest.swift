@@ -72,6 +72,10 @@ final class TokenizerTest: XCTestCase {
         assertTokens(["3.145e12", "*", "14e-6"], from: " 3.145e12 * 14e-6 ")
     }
     
+    func testWhitespaceInStringJoin() {
+        assertTokens(["A sheet''", "!", "A1", "&", " a string\n\"\"Yes\"\"\n"], from: "'A sheet'''!A1&\" a string\n\"\"Yes\"\"\n")
+    }
+    
     private func assertTokens(_ expected: [String], from: String, file: StaticString = #file,
                               line: UInt = #line) {
         let result = Array(Tokenizer(from).map({String($0)}))
