@@ -165,7 +165,7 @@ struct Tokenizer: Sequence, IteratorProtocol {
                 advanceEnd(by: 2) // Skip both " in ""
                 containsEscapeSequence = true
                 continue
-            }
+            } 
             break
         }
         let string = token
