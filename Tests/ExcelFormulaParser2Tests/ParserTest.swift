@@ -16,12 +16,50 @@ final class ParserTest: XCTestCase {
         assertResult(.number(-1), from: "-1")
     }
     
+    func testArithmetic() {
+        assertResult(.maths(.number(1), [.add(.number(1))]), from: "1+1")
+        assertResult(.maths(.number(1), [.add(.number(1)), .add(.number(2))]), from: "1+ 1+ 2")
+        
+        assertResult(.maths(.number(1), [.subtract(.number(1))]), from: "1-1")
+        assertResult(.maths(.number(-1), [.subtract(.number(1))]), from: "-1-1")
+        assertResult(.maths(.number(1), [.add(.number(1)), .subtract(.number(2))]), from: "1+ 1-2")
+        
+        assertResult(.maths(.number(1), [.multiply(.number(2))]), from: "1*2")
+        
+        assertResult(
+            .maths(.number(1), [.add(.maths(.number(3), [.multiply(.number(2)), .divide(.number(5))]))]),
+            from: "1+3*2/5")
+        
+        assertResult(
+            .maths(.maths(.number(3), [.multiply(.number(2)), .divide(.number(5))]), [.subtract(.number(1))]),
+            from: "3*2/5-1")
+        
+    }
+    
+    
     func testFunctions() {
         assertResult(.function(name: "NOW"), from: "NOW()")
     }
     
-    func testList() {
-        assertResult(.function(name: "IF"), from: "IF()")
+    func testArguments() {
+        assertResult(.function(name: "IF", arguments: .list([.boolean(true), .boolean(false)])), from: "IF(TRUE, FALSE)")
+    }
+    
+    func testNestedFunctions() {
+        assertResult(
+            .function(
+                name: "IF",
+                arguments: .list([
+                    .function(
+                        name: "IF",
+                        arguments: .list([
+                            .boolean(true),
+                            .boolean(false)
+                        ])),
+                    .boolean(true)
+                ])
+            ),
+            from: "IF(IF(TRUE, FALSE), TRUE)")
     }
   
     

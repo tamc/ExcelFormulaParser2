@@ -14,11 +14,10 @@ struct Queue<T>: Sequence, IteratorProtocol {
         let q = QueuedItem(item)
         if let l = last {
             l.next = q
-            last = q
         } else {
-            last = q
             first = q
         }
+        last = q
     }
 }
 
