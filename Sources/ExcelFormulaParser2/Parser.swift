@@ -7,9 +7,7 @@ enum ExcelExpression: Hashable {
     case number(Decimal)
     case boolean(Bool)
     indirect case brackets(ExcelExpression)
-    indirect case function(name: String, arguments: ExcelExpression = .list([]))
-    // FIXME: Do we need list as a separate thing?
-    indirect case list([ExcelExpression])
+    indirect case function(name: String, arguments: [ExcelExpression] = [])
     indirect case maths([MathsOperation])
     indirect case intersection(ExcelExpression, ExcelExpression)
     case ref(String)
@@ -138,11 +136,11 @@ struct Parser {
         }
     }
     
-    mutating func parseList(separator: ExcelToken, close: ExcelToken) -> ExcelExpression {
+    mutating func parseList(separator: ExcelToken, close: ExcelToken) -> [ExcelExpression] {
         var parsedExpression = false
         var list = [ExcelExpression]()
         while true {
-            guard let token = tokens.peek() else { return .list(list) }
+            guard let token = tokens.peek() else { return list }
             if token == separator {
                 // e.g., (1,,3) == [1, .empty, 3]
                 if parsedExpression == false {
@@ -156,13 +154,13 @@ struct Parser {
                 _ = tokens.next()
                 // e.g., () == []
                 if list.isEmpty {
-                    return .list(list)
+                    return list
                 }
                 // e.g, (,) == [.empty, .empty]
                 if parsedExpression == false {
                     list.append(.empty)
                 }
-                return .list(list)
+                return list
             }
             
             if let subExpression = result() {

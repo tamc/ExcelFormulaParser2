@@ -74,22 +74,22 @@ final class ParserTest: XCTestCase {
     }
     
     func testArguments() {
-        assertResult(.function(name: "IF", arguments: .list([.boolean(true), .boolean(false)])), from: "IF(TRUE, FALSE)")
+        assertResult(.function(name: "IF", arguments: [.boolean(true), .boolean(false)]), from: "IF(TRUE, FALSE)")
     }
     
     func testNestedFunctions() {
         assertResult(
             .function(
                 name: "IF",
-                arguments: .list([
+                arguments: [
                     .function(
                         name: "IF",
-                        arguments: .list([
+                        arguments: [
                             .boolean(true),
                             .boolean(false)
-                        ])),
+                        ]),
                     .boolean(true)
-                ])
+                ]
             ),
             from: "IF(IF(TRUE, FALSE), TRUE)")
     }
@@ -102,8 +102,8 @@ final class ParserTest: XCTestCase {
         assertResult(.range(.ref("A1"), .ref("B3")), from: "A1:B3")
         assertResult(
             .range(
-                .function(name: "OFFSET", arguments: .list([.ref("A1"), .number(1), .number(1)])),
-                .function(name: "OFFSET", arguments: .list([.ref("A1"), .number(2), .number(3)]))
+                .function(name: "OFFSET", arguments: [.ref("A1"), .number(1), .number(1)]),
+                .function(name: "OFFSET", arguments: [.ref("A1"), .number(2), .number(3)])
             ),
             from: "OFFSET(A1,1,1):OFFSET(A1,2,3)")
     }
