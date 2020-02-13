@@ -33,16 +33,10 @@ struct Parser {
     mutating func result() -> ExcelExpression? {
         var firstExpression = parseNextToken()
         if firstExpression == nil {
-            if tokens.peek() == .symbol(.maths(.subtract)) {
-                _ = tokens.next()
-                if let e = parseNextToken() {
-                    firstExpression = .maths([.subtract(e)])
-                } else {
-                    return nil
-                }
-            } else {
-                return nil
-            }
+            guard tokens.peek() == .symbol(.maths(.subtract)) else { return nil }
+            _ = tokens.next()
+            guard let e = parseNextToken() else { return nil }
+            firstExpression = .maths([.subtract(e)])
         }
         guard var parsed = firstExpression else {
             return nil
