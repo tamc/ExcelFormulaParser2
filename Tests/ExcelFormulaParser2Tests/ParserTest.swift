@@ -79,6 +79,10 @@ final class ParserTest: XCTestCase {
                      from: "-(1+3)")
     }
     
+    func testTextJoin() {
+        assertResult(.textJoin(.string("Hello"), .string("World")), from: "\"Hello\"&\"World\"")
+    }
+    
     func testFunctions() {
         assertResult(.function(name: "NOW"), from: "NOW()")
     }

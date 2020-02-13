@@ -12,11 +12,13 @@ enum ExcelExpression: Hashable {
     indirect case intersection(ExcelExpression, ExcelExpression)
     /// Union in Excel terminology is NOT the same as a Set union, because dulicates are _not_ eliminated
     indirect case union([ExcelExpression])
+    indirect case textJoin(ExcelExpression, ExcelExpression)
     case ref(String)
     indirect case range(ExcelExpression, ExcelExpression)
     indirect case sheet(ExcelExpression, ExcelExpression)
     indirect case structured(ExcelExpression)
     indirect case table(String, ExcelExpression)
+
 }
 
 enum MathsOperation: Hashable {
@@ -61,6 +63,9 @@ struct Parser {
         }
         if next.isExcelMathOperator {
             return parseOperator(left)
+        }
+        if next == .symbol(.ampersand) {
+            return parseTextJoin(left)
         }
         if next == .symbol(.percent) {
             _ = tokens.next()
@@ -236,6 +241,14 @@ struct Parser {
     mutating func parseIntersection(_ left: ExcelExpression) -> ExcelExpression? {
         guard let right = result() else { return nil }
         return .intersection(left, right)
+    }
+    
+    mutating func parseTextJoin(_ left: ExcelExpression) -> ExcelExpression {
+        _ = tokens.next()
+        guard let right = result() else {
+            fatalError("No right hand side to ampersand for text join")
+        }
+        return .textJoin(left, right)
     }
 }
 
