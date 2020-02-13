@@ -1,8 +1,8 @@
 import Foundation
 
 enum ExcelToken: Hashable {
-    case literal(Substring, containsEscapeSequence: Bool = false)
-    case string(Substring, containsEscapeSequence: Bool = false)
+    case literal(Substring)
+    case string(Substring)
     case error(ExcelError)
     case number(Decimal)
     case symbol(ExcelSymbol)
@@ -165,7 +165,7 @@ struct Tokenizer: Sequence, IteratorProtocol {
         extendToken(while: .excelLiteral)
         let string = token
         startNextToken()
-        return .literal(string, containsEscapeSequence: false)
+        return .literal(string)
     }
     
     mutating private func excelError() -> ExcelToken? {
@@ -178,9 +178,9 @@ struct Tokenizer: Sequence, IteratorProtocol {
     }
     
     mutating private func excelEscapedLiteral() -> ExcelToken? {
-        let (result, containsEscapeSequence) =  escapedString(marker: "'")
+        let result =  escapedString(marker: "'")
         guard let s = result else { return nil }
-        return .literal(s, containsEscapeSequence: containsEscapeSequence)
+        return .literal(s)
     }
     
     mutating private func excelStructuredLiteral() -> ExcelToken? {
@@ -199,7 +199,7 @@ struct Tokenizer: Sequence, IteratorProtocol {
         }
         let string = token.havingRemoved(baseIndexes: escapeCharacters)
         startNextToken()
-        return .literal(string, containsEscapeSequence: false)
+        return .literal(string)
     }
     
     mutating private func excelEscapedStructuredLiteral() -> ExcelToken? {
@@ -212,16 +212,16 @@ struct Tokenizer: Sequence, IteratorProtocol {
             advanceEnd() // Skip closing ]
         }
         startNextToken()
-        return .literal(string, containsEscapeSequence: false)
+        return .literal(string)
     }
     
     mutating private func excelString() -> ExcelToken? {
-        let (result, containsEscapeSequence) = escapedString(marker: "\"")
+        let result = escapedString(marker: "\"")
         guard let s = result else { return nil }
-        return .string(s, containsEscapeSequence: containsEscapeSequence)
+        return .string(s)
     }
     
-    mutating private func escapedString(marker: Character) -> (s: Substring?, containsEscapeSequence: Bool) {
+    mutating private func escapedString(marker: Character) -> Substring? {
         advanceEnd() // Skip first "
         advanceStart() // Skip first "
         
@@ -243,7 +243,7 @@ struct Tokenizer: Sequence, IteratorProtocol {
             advanceEnd() // Skip closing "
         }
         startNextToken()
-        return (string, false)
+        return string
     }
     
     mutating private func skipWhitespace() {

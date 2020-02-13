@@ -68,7 +68,7 @@ struct Parser {
     mutating func parseNextToken() -> ExcelExpression? {
         guard let token = tokens.peek() else { return nil }
         switch token {
-        case .literal(let s, let e):
+        case .literal(let s):
             _ = tokens.next()
             if s == "TRUE" {
                 return .boolean(true)
@@ -76,13 +76,11 @@ struct Parser {
             if s == "FALSE" {
                 return .boolean(false)
             }
-            let name = removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "''", escapeReplacement: "'")
-            
             if case .symbol(.open(.bracket)) = tokens.peek() {
                 _ = tokens.next()
                 let arguments = parseList(separator: .symbol(.comma), close: .symbol(.close(.bracket)))
     
-                return .function(name: name, arguments: arguments)
+                return .function(name: String(s), arguments: arguments)
             }
             
             if case .symbol(.bang) = tokens.peek() {
@@ -90,14 +88,14 @@ struct Parser {
                 guard let ref = parseNextToken() else {
                     fatalError("! with nothing after")
                 }
-                return .sheet(.ref(name), ref)
+                return .sheet(.ref(String(s)), ref)
             }
 
-            return .ref(name)
+            return .ref(String(s))
 
-        case .string(let s, let e):
+        case .string(let s):
             _ = tokens.next()
-            return .string(removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "\"\"", escapeReplacement: "\""))
+            return .string(String(s))
             
         case .error(let e):
             _ = tokens.next()
@@ -221,13 +219,6 @@ struct Parser {
         return .intersection(left, right)
     }
 }
-
-
-func removeEscapes(string: Substring, containsEscapeSequence: Bool, escapeSequence: String, escapeReplacement: String) -> String {
-    guard containsEscapeSequence else { return String(string) }
-    return string.replacingOccurrences(of: escapeSequence, with: escapeReplacement)
-}
-
 
 private extension ExcelToken {
     var excelMathOperator: ExcelMathOperator? {
