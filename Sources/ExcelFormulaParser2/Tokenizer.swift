@@ -254,7 +254,7 @@ private func ~= (pattern: CharacterSet, value: Character) -> Bool {
 extension CharacterSet {
     static let excelError = CharacterSet(charactersIn: "#REF!#NAME?#VALUE!#DIV/0!#N/A#NUM!")
     static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&%")
-    static let excelLiteralFirstCharacter = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
+    static let excelLiteralFirstCharacter = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_$"))
     static let excelLiteral = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_.$"))
     static let decimalPoint = CharacterSet(charactersIn: ".")
     static let decimalExponent = CharacterSet(charactersIn: "eE")

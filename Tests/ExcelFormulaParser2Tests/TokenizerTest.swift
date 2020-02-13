@@ -74,7 +74,7 @@ final class TokenizerTest: XCTestCase {
     }
     
     func testWhitespaceInStringJoin() {
-        assertTokens([.literal("A sheet''", containsEscapeSequence: true), .symbol(.bang), .literal("A1"), .symbol(.ampersand), .string(" a string\n\"\"Yes\"\"\n", containsEscapeSequence: true)], from: "'A sheet'''!A1&\" a string\n\"\"Yes\"\"\n")
+        assertTokens([.literal("A sheet''", containsEscapeSequence: true), .symbol(.bang), .literal("$A$1"), .symbol(.ampersand), .string(" a string\n\"\"Yes\"\"\n", containsEscapeSequence: true)], from: "'A sheet'''!$A$1&\" a string\n\"\"Yes\"\"\n")
     }
     
     private func assertTokens(_ expected: [ExcelToken], from: String, file: StaticString = #file,
