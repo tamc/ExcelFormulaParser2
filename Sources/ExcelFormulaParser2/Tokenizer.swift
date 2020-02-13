@@ -55,6 +55,8 @@ struct Tokenizer: Sequence, IteratorProtocol {
     private var token: Substring { s[tr] }
     /// Next character (warning, will fatal error if te >= s.endIndex
     private var nextCharacter: Character { s[te] }
+    /// Different escaping rules inside square brackets...
+    private var outsideSquareBrackets = true
         
     init(_ s: String) {
         self.s = s
@@ -64,16 +66,32 @@ struct Tokenizer: Sequence, IteratorProtocol {
         
     mutating func next() -> ExcelToken? {
         while isAnotherToken() {
-            switch nextCharacter {
-            case "#": return excelError()
-            case "\"": return excelString()
-            case "'": return excelEscapedLiteral()
-            case CharacterSet.decimalDigits: return number()
-            case CharacterSet.excelSymbols: return symbol()
-            case CharacterSet.whitespacesAndNewlines: skipWhitespace()
-            case CharacterSet.excelLiteralFirstCharacter: return literal()
-            default:
-                fail("Could not identify first character of the token")
+            if CharacterSet.whitespacesAndNewlines.containsUnicodeScalars(of: nextCharacter) {
+                skipWhitespace()
+                continue
+            }
+            
+            if outsideSquareBrackets {
+                switch nextCharacter {
+                case "#": return excelError()
+                case "\"": return excelString()
+                case "'": return excelEscapedLiteral()
+                case CharacterSet.decimalDigits: return number()
+                case CharacterSet.excelSymbols: return symbol()
+                case CharacterSet.excelLiteralFirstCharacter: return literal()
+                default:
+                    fail("Could not identify first character of the token")
+                }
+            } else {
+                // Different escaping rules inside structured table references
+                switch nextCharacter {
+                case "[": return excelEscapedStructuredLiteral()
+                case CharacterSet.unescapedStructuredChars: return excelStructuredLiteral()
+                case CharacterSet.excelSymbols: return symbol()
+                default:
+                    fail("Could not identify first character of the token")
+                }
+                
             }
         }
         return nil
@@ -109,8 +127,12 @@ struct Tokenizer: Sequence, IteratorProtocol {
             
         case "(": result = .open(.bracket)
         case ")": result = .close(.bracket)
-        case "[": result = .open(.squareBracket)
-        case "]": result = .close(.squareBracket)
+        case "[":
+            outsideSquareBrackets = false
+            result = .open(.squareBracket)
+        case "]":
+            outsideSquareBrackets = true
+            result = .close(.squareBracket)
             
         case "!": result = .bang
         case ":": result = .colon
@@ -145,6 +167,26 @@ struct Tokenizer: Sequence, IteratorProtocol {
         let (result, containsEscapeSequence) =  escapedString(marker: "'")
         guard let s = result else { return nil }
         return .literal(s, containsEscapeSequence: containsEscapeSequence)
+    }
+    
+    mutating private func excelStructuredLiteral() -> ExcelToken? {
+        extendToken(while: .unescapedStructuredChars)
+        let string = token
+        startNextToken()
+        return .literal(string, containsEscapeSequence: false)
+    }
+    
+    mutating private func excelEscapedStructuredLiteral() -> ExcelToken? {
+        advanceEnd() // Skip first [
+        advanceStart()  // Skip first [
+        
+        extendToken(while: .escapedStructuredChars)
+        let string = token
+        if canAdvanceEnd() {
+            advanceEnd() // Skip closing ]
+        }
+        startNextToken()
+        return .literal(string, containsEscapeSequence: false)
     }
     
     mutating private func excelString() -> ExcelToken? {
@@ -254,11 +296,13 @@ private func ~= (pattern: CharacterSet, value: Character) -> Bool {
 extension CharacterSet {
     static let excelError = CharacterSet(charactersIn: "#REF!#NAME?#VALUE!#DIV/0!#N/A#NUM!")
     static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&%")
-    static let excelLiteralFirstCharacter = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_$"))
-    static let excelLiteral = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_.$"))
+    static let excelLiteralFirstCharacter = alphanumerics.union(CharacterSet(charactersIn: "_$"))
+    static let excelLiteral = alphanumerics.union(CharacterSet(charactersIn: "_.$"))
     static let decimalPoint = CharacterSet(charactersIn: ".")
     static let decimalExponent = CharacterSet(charactersIn: "eE")
     static let decimalPlusMinus = CharacterSet(charactersIn: "+-")
+    static let unescapedStructuredChars = alphanumerics.union(CharacterSet(charactersIn: " "))
+    static let escapedStructuredChars = alphanumerics.union(CharacterSet(charactersIn: " #,:.\"{}$^&*+=-<>/"))
 }
 
 func mark(range: Range<String.Index>, in string: String) {

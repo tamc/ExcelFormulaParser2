@@ -77,6 +77,17 @@ final class TokenizerTest: XCTestCase {
         assertTokens([.literal("A sheet''", containsEscapeSequence: true), .symbol(.bang), .literal("$A$1"), .symbol(.ampersand), .string(" a string\n\"\"Yes\"\"\n", containsEscapeSequence: true)], from: "'A sheet'''!$A$1&\" a string\n\"\"Yes\"\"\n")
     }
     
+    func testStructuredTableReferenceEscaping() {
+        assertTokens([
+            .literal("Table1"),
+            .symbol(.open(.squareBracket)),
+            .literal("#All"),
+            .symbol(.comma),
+            .literal("Column 1"),
+            .symbol(.close(.squareBracket)),
+        ], from: "Table1[[#All], [Column 1]]")
+    }
+    
     private func assertTokens(_ expected: [ExcelToken], from: String, file: StaticString = #file,
                               line: UInt = #line) {
         let result = Array(Tokenizer(from))
