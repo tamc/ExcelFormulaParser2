@@ -17,24 +17,33 @@ final class ParserTest: XCTestCase {
     }
     
     func testArithmetic() {
-        assertResult(.maths(.number(1), [.add(.number(1))]), from: "1+1")
-        assertResult(.maths(.number(1), [.add(.number(1)), .add(.number(2))]), from: "1+ 1+ 2")
+        assertResult(.maths([.start(.number(1)), .add(.number(1))]), from: "1+1")
+        assertResult(.maths([.start(.number(1)), .add(.number(1)), .add(.number(2))]), from: "1+ 1+ 2")
         
-        assertResult(.maths(.number(1), [.subtract(.number(1))]), from: "1-1")
-        assertResult(.maths(.number(-1), [.subtract(.number(1))]), from: "-1-1")
-        assertResult(.maths(.number(1), [.add(.number(1)), .subtract(.number(2))]), from: "1+ 1-2")
+        assertResult(.maths([.start(.number(1)), .subtract(.number(1))]), from: "1-1")
+        assertResult(.maths([.start(.number(-1)), .subtract(.number(1))]), from: "-1-1")
+        assertResult(.maths([.start(.number(1)), .add(.number(1)), .subtract(.number(2))]), from: "1+ 1-2")
         
-        assertResult(.maths(.number(1), [.multiply(.number(2))]), from: "1*2")
+        assertResult(.maths([.start(.number(1)), .multiply(.number(2))]), from: "1*2")
     }
     
     func testArithmeticPrecedent() {
         assertResult(
-            .maths(.number(1), [.add(.maths(.number(3), [.multiply(.number(2)), .divide(.number(5))]))]),
+            .maths([.start(.number(1)), .add(.maths([.start(.number(3)), .multiply(.number(2)), .divide(.number(5))]))]),
             from: "1+3*2/5")
         
         assertResult(
-            .maths(.maths(.number(3), [.multiply(.number(2)), .divide(.number(5))]), [.subtract(.number(1))]),
-            from: "3*2/5-1")
+            .maths([
+                .start(
+                    .maths([
+                        .start(.number(3)),
+                        .multiply(.number(2)),
+                        .divide(.number(5))
+                ])),
+                .subtract(.number(1))
+            ]),
+            from: "3*2/5-1"
+        )
     }
     
     func testFunctions() {

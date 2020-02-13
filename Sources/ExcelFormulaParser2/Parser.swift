@@ -8,11 +8,12 @@ enum ExcelExpression: Hashable {
     case boolean(Bool)
     indirect case function(name: String, arguments: ExcelExpression = .list([]))
     indirect case list([ExcelExpression])
-    indirect case maths(ExcelExpression, [MathsOperation])
+    indirect case maths([MathsOperation])
     indirect case intersection([ExcelExpression])
 }
 
 enum MathsOperation: Hashable {
+    case start(ExcelExpression)
     case add(ExcelExpression)
     case subtract(ExcelExpression)
     case multiply(ExcelExpression)
@@ -129,7 +130,7 @@ struct Parser {
     }
     
     mutating func parseOperator(_ left: ExcelExpression) -> ExcelExpression {
-        var list = [MathsOperation]()
+        var list: [MathsOperation] = [.start(left)]
         
         guard var firstOp = tokens.next()?.excelMathOperator else {
             fatalError("Missing the first operator")
@@ -163,7 +164,7 @@ struct Parser {
             
             firstOp = nextOp
         }
-        return .maths(left, list)
+        return .maths(list)
     }
 }
 
