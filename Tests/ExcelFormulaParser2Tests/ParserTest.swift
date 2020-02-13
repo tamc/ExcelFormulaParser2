@@ -46,6 +46,21 @@ final class ParserTest: XCTestCase {
         )
     }
     
+    func testBrackets() {
+        assertResult(.maths([
+            .start(.brackets(.maths([.start(.number(1)), .add(.number(3))]))),
+            .multiply(.brackets(.maths([.start(.number(2)), .divide(.number(5))])))
+            ]),
+            from: "(1+3)*(2/5)")
+    }
+    
+    func testPercentage() {
+        assertResult(
+            .maths([.percent(.number(100))]),
+            from: "100%"
+        )
+    }
+    
     func testFunctions() {
         assertResult(.function(name: "NOW"), from: "NOW()")
     }

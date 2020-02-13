@@ -6,6 +6,7 @@ enum ExcelExpression: Hashable {
     case error(ExcelError)
     case number(Decimal)
     case boolean(Bool)
+    indirect case brackets(ExcelExpression)
     indirect case function(name: String, arguments: ExcelExpression = .list([]))
     indirect case list([ExcelExpression])
     indirect case maths([MathsOperation])
@@ -19,6 +20,7 @@ enum MathsOperation: Hashable {
     case multiply(ExcelExpression)
     case divide(ExcelExpression)
     case power(ExcelExpression)
+    case percent(ExcelExpression)
 }
 
 struct Parser {
@@ -41,6 +43,10 @@ struct Parser {
         guard let next = tokens.peek() else { return nil }
         if next.isExcelMathOperator {
             return parseOperator(left)
+        }
+        if next == .symbol(.percent) {
+            _ = tokens.next()
+            return .maths([.percent(left)])
         }
         return nil
     }
@@ -79,7 +85,8 @@ struct Parser {
         case .symbol(let s):
             switch s {
             case .close:
-                fatalError("Unexpected close")
+                return nil
+                
             case .maths(.subtract):
                 _ = tokens.next()
                 if case let .number(n) = tokens.peek() {
@@ -87,6 +94,15 @@ struct Parser {
                     return .number(-n)
                 }
                 return nil
+                
+            case .open(.bracket):
+                _ = tokens.next()
+                let e = result() ?? .empty
+                if tokens.next() != .symbol(.close(.bracket)) {
+                    fatalError("Brackets not closed")
+                }
+                return .brackets(e)
+                
                 
             default:
                 return nil
