@@ -66,7 +66,17 @@ final class ParserTest: XCTestCase {
     }
     
     func testNegativePrefix() {
-        assertResult(.maths([.subtract(.brackets(.maths([.start(.number(1)), .add(.number(3))])))]), from: "-(1+3)")
+        assertResult(.maths([
+            .subtract(
+                .brackets(
+                    .maths([
+                        .start(.number(1)),
+                        .add(.number(3))
+                    ])
+                )
+            )
+        ]),
+                     from: "-(1+3)")
     }
     
     func testFunctions() {
