@@ -14,6 +14,7 @@ enum ExcelExpression: Hashable {
     indirect case intersection([ExcelExpression])
     case ref(String)
     indirect case range(ExcelExpression, ExcelExpression)
+    indirect case sheet(ExcelExpression, ExcelExpression)
 }
 
 enum MathsOperation: Hashable {
@@ -77,14 +78,23 @@ struct Parser {
             if s == "FALSE" {
                 return .boolean(false)
             }
+            let name = removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "''", escapeReplacement: "'")
+            
             if case .symbol(.open(.bracket)) = tokens.peek() {
                 _ = tokens.next()
                 let arguments = parseList(separator: .symbol(.comma), close: .symbol(.close(.bracket)))
-                let name = removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "''", escapeReplacement: "'")
     
                 return .function(name: name, arguments: arguments)
             }
-            let name = removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "''", escapeReplacement: "'")
+            
+            if case .symbol(.bang) = tokens.peek() {
+                _ = tokens.next()
+                guard let ref = parseNextToken() else {
+                    fatalError("! with nothing after")
+                }
+                return .sheet(.ref(name), ref)
+            }
+
             return .ref(name)
 
         case .string(let s, let e):

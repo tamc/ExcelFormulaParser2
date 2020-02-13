@@ -7,6 +7,4 @@
 
 import Foundation
 
-Optional(.brackets(.maths([.start(.number(1)), .add(.number(3))])))
-
-Optional(.brackets(.maths([.start(.number(1)), .add(.number(3))])))
+Optional(.range(.range(.ref("Sheet1"), .sheet(.ref("Sheet2"), .ref("A1"))), .ref("B3")))
