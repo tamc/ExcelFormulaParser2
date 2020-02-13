@@ -185,21 +185,21 @@ struct Tokenizer: Sequence, IteratorProtocol {
     
     mutating private func excelStructuredLiteral() -> ExcelToken? {
         let c = CharacterSet.unescapedStructuredSubsequentChars
-        var containsEscapeSequence = false
+        var escapeCharacters = [String.Index]()
         outerloop: while canAdvanceEnd() {
             switch nextCharacter {
             case c:
                 advanceEnd()
             case "'":
+                escapeCharacters.append(te)
                 advanceEnd(by: 2)
-                containsEscapeSequence = true
             default:
                 break outerloop
             }
         }
-        let string = token
+        let string = token.havingRemoved(baseIndexes: escapeCharacters)
         startNextToken()
-        return .literal(string, containsEscapeSequence: containsEscapeSequence)
+        return .literal(string, containsEscapeSequence: false)
     }
     
     mutating private func excelEscapedStructuredLiteral() -> ExcelToken? {
@@ -342,4 +342,17 @@ func mark(range: Range<String.Index>, in string: String) {
     let c = marker.distance(from: f, to: t)
     let result = marker.replacingCharacters(in: f..<t, with: String(repeating: "^", count: c))
     print(result)
+}
+
+extension Substring {
+    func havingRemoved(baseIndexes: [String.Index]) -> Substring {
+        guard baseIndexes.isEmpty == false else { return self }
+        var e = self
+        for i in baseIndexes.reversed() {
+            let sd = base.distance(from: startIndex, to: i)
+            let si = e.index(e.startIndex, offsetBy: sd)
+            e.remove(at: si)
+        }
+        return Substring(e)
+    }
 }

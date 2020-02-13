@@ -91,7 +91,7 @@ final class TokenizerTest: XCTestCase {
     func testEscapingInStructuredTableReferences() {
         assertTokens([
             .symbol(.open(.squareBracket)),
-            .literal("'['#OfItems''']", containsEscapeSequence: true),
+            .literal("[#OfItems']"),
             .symbol(.close(.squareBracket)),
         ], from: "['['#OfItems''']]")
     }
