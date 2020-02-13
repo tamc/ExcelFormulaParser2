@@ -8,9 +8,12 @@ enum ExcelExpression: Hashable {
     case boolean(Bool)
     indirect case brackets(ExcelExpression)
     indirect case function(name: String, arguments: ExcelExpression = .list([]))
+    // FIXME: Do we need list as a separate thing?
     indirect case list([ExcelExpression])
     indirect case maths([MathsOperation])
     indirect case intersection([ExcelExpression])
+    case ref(String)
+    indirect case range(ExcelExpression, ExcelExpression)
 }
 
 enum MathsOperation: Hashable {
@@ -50,6 +53,9 @@ struct Parser {
     
     mutating func parseJoin(left: ExcelExpression) -> ExcelExpression? {
         guard let next = tokens.peek() else { return nil }
+        if next == .symbol(.colon) {
+            return parseRange(left)
+        }
         if next.isExcelMathOperator {
             return parseOperator(left)
         }
@@ -78,7 +84,9 @@ struct Parser {
     
                 return .function(name: name, arguments: arguments)
             }
-            fatalError("Not implemented yet")
+            let name = removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "''", escapeReplacement: "'")
+            return .ref(name)
+
         case .string(let s, let e):
             _ = tokens.next()
             return .string(removeEscapes(string: s, containsEscapeSequence: e, escapeSequence: "\"\"", escapeReplacement: "\""))
@@ -190,6 +198,14 @@ struct Parser {
             firstOp = nextOp
         }
         return .maths(list)
+    }
+    
+    mutating func parseRange(_ left: ExcelExpression) -> ExcelExpression {
+        _ = tokens.next()
+        guard let right = parseNextToken() else {
+            fatalError("No right hand side to colon")
+        }
+        return .range(left, right)
     }
 }
 

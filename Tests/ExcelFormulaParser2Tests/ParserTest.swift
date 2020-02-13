@@ -94,6 +94,13 @@ final class ParserTest: XCTestCase {
             from: "IF(IF(TRUE, FALSE), TRUE)")
     }
   
+    func testSimpleReference() {
+        assertResult(.ref("A1"), from: "A1")
+    }
+    
+    func testRangeReference() {
+        assertResult(.range(.ref("A1"), .ref("B3")), from: "A1:B3")
+    }
     
     private func assertResult(_ expected: ExcelExpression?, from: String, file: StaticString = #file,
                               line: UInt = #line) {
