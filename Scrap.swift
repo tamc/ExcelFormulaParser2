@@ -6,5 +6,3 @@
 //
 
 import Foundation
-
-Optional(.range(.range(.ref("Sheet1"), .sheet(.ref("Sheet2"), .ref("A1"))), .ref("B3")))

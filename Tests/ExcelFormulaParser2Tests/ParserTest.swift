@@ -119,6 +119,15 @@ final class ParserTest: XCTestCase {
     }
     
     func testSheetIntersection() {
+        assertResult(
+            .intersection(
+                .range(.sheet(.ref("Sheet1"), .ref("A1")), .ref("B3")),
+                .intersection(
+                    .ref("A1"),
+                    .range(.ref("A1"), .ref("B3"))
+                )
+        ),
+        from: "Sheet1!A1:B3 A1 A1:B3")
         
     }
     

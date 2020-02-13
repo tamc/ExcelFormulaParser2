@@ -11,7 +11,7 @@ enum ExcelExpression: Hashable {
     // FIXME: Do we need list as a separate thing?
     indirect case list([ExcelExpression])
     indirect case maths([MathsOperation])
-    indirect case intersection([ExcelExpression])
+    indirect case intersection(ExcelExpression, ExcelExpression)
     case ref(String)
     indirect case range(ExcelExpression, ExcelExpression)
     indirect case sheet(ExcelExpression, ExcelExpression)
@@ -64,7 +64,7 @@ struct Parser {
             _ = tokens.next()
             return .maths([.percent(left)])
         }
-        return nil
+        return parseIntersection(left)
     }
     
     mutating func parseNextToken() -> ExcelExpression? {
@@ -216,6 +216,11 @@ struct Parser {
             fatalError("No right hand side to colon")
         }
         return .range(left, right)
+    }
+    
+    mutating func parseIntersection(_ left: ExcelExpression) -> ExcelExpression? {
+        guard let right = result() else { return nil }
+        return .intersection(left, right)
     }
 }
 
