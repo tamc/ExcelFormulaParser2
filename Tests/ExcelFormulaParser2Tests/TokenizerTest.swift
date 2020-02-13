@@ -18,7 +18,7 @@ final class TokenizerTest: XCTestCase {
         
         /// Escaped literals
         assertTokens([.literal("Sheet 1")], from: "'Sheet 1'")
-        assertTokens([.literal("Sheet ''1''", containsEscapeSequence: true)], from: "'Sheet ''1'''")
+        assertTokens([.literal("Sheet '1'")], from: "'Sheet ''1'''")
         
         /// Errors
         assertTokens([.error(.ref)], from: "#REF!")
@@ -54,7 +54,7 @@ final class TokenizerTest: XCTestCase {
 
         /// Strings
         assertTokens([.string("Hello world")], from: "\"Hello world\"")
-        assertTokens([.string("Hello \"\"world",containsEscapeSequence: true)], from: "\"Hello \"\"world\"")
+        assertTokens([.string("Hello \"world")], from: "\"Hello \"\"world\"")
     }
     
     func testBasicSequence() {
@@ -74,7 +74,7 @@ final class TokenizerTest: XCTestCase {
     }
     
     func testWhitespaceInStringJoin() {
-        assertTokens([.literal("A sheet''", containsEscapeSequence: true), .symbol(.bang), .literal("$A$1"), .symbol(.ampersand), .string(" a string\n\"\"Yes\"\"\n", containsEscapeSequence: true)], from: "'A sheet'''!$A$1&\" a string\n\"\"Yes\"\"\n")
+        assertTokens([.literal("A sheet'"), .symbol(.bang), .literal("$A$1"), .symbol(.ampersand), .string(" a string\n\"Yes\"\n")], from: "'A sheet'''!$A$1&\" a string\n\"\"Yes\"\"\n")
     }
     
     func testStructuredTableReferenceEscaping() {

@@ -225,25 +225,25 @@ struct Tokenizer: Sequence, IteratorProtocol {
         advanceEnd() // Skip first "
         advanceStart() // Skip first "
         
-        var containsEscapeSequence = false
+        var escapeCharacters = [String.Index]()
         while canAdvanceEnd() {
             while canAdvanceEnd(), nextCharacter != marker {
                 advanceEnd()
             }
             // Check if we have hit a double marker (like "") in which case is an escaped marker in Excel.
             if peekNextCharacter() == marker {
+                escapeCharacters.append(te)
                 advanceEnd(by: 2) // Skip both " in ""
-                containsEscapeSequence = true
                 continue
             } 
             break
         }
-        let string = token
+        let string = token.havingRemoved(baseIndexes: escapeCharacters)
         if canAdvanceEnd() {
             advanceEnd() // Skip closing "
         }
         startNextToken()
-        return (string, containsEscapeSequence)
+        return (string, false)
     }
     
     mutating private func skipWhitespace() {
