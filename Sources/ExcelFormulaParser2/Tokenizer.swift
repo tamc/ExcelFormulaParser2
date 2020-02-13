@@ -66,35 +66,49 @@ struct Tokenizer: Sequence, IteratorProtocol {
         
     mutating func next() -> ExcelToken? {
         while isAnotherToken() {
-            if CharacterSet.whitespacesAndNewlines.containsUnicodeScalars(of: nextCharacter) {
+            if isWhitespace() {
                 skipWhitespace()
                 continue
             }
             
             if outsideSquareBrackets {
-                switch nextCharacter {
-                case "#": return excelError()
-                case "\"": return excelString()
-                case "'": return excelEscapedLiteral()
-                case CharacterSet.decimalDigits: return number()
-                case CharacterSet.excelSymbols: return symbol()
-                case CharacterSet.excelLiteralFirstCharacter: return literal()
-                default:
-                    fail("Could not identify first character of the token")
-                }
+                return nextOutsideSquareBrackets()
             } else {
-                // Different escaping rules inside structured table references
-                switch nextCharacter {
-                case "[": return excelEscapedStructuredLiteral()
-                case CharacterSet.unescapedStructuredChars: return excelStructuredLiteral()
-                case CharacterSet.excelSymbols: return symbol()
-                default:
-                    fail("Could not identify first character of the token")
-                }
-                
+                return nextInsideSquareBrackets()
             }
         }
         return nil
+    }
+    
+    private func isWhitespace() -> Bool {
+        return CharacterSet
+            .whitespacesAndNewlines
+            .containsUnicodeScalars(of: nextCharacter)
+    }
+    
+    mutating private func nextOutsideSquareBrackets() -> ExcelToken? {
+        switch nextCharacter {
+        case "#": return excelError()
+        case "\"": return excelString()
+        case "'": return excelEscapedLiteral()
+        case CharacterSet.decimalDigits: return number()
+        case CharacterSet.excelSymbols: return symbol()
+        case CharacterSet.excelLiteralFirstCharacter: return literal()
+        default:
+            fail("Could not identify first character of the token")
+        }
+    }
+    
+    mutating private func nextInsideSquareBrackets() -> ExcelToken? {
+        // Different escaping rules inside structured table references
+        switch nextCharacter {
+        case "[": return excelEscapedStructuredLiteral()
+        case CharacterSet.unescapedStructuredChars: return excelStructuredLiteral()
+        case CharacterSet.excelSymbols: return symbol()
+        default:
+            fail("Could not identify first character of the token")
+        }
+
     }
     
     mutating private func number() -> ExcelToken? {
