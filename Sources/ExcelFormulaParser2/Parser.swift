@@ -10,6 +10,8 @@ enum ExcelExpression: Hashable {
     indirect case function(name: String, arguments: [ExcelExpression] = [])
     indirect case maths([MathsOperation])
     indirect case intersection(ExcelExpression, ExcelExpression)
+    /// Union in Excel terminology is NOT the same as a Set union, because dulicates are _not_ eliminated
+    indirect case union([ExcelExpression])
     case ref(String)
     indirect case range(ExcelExpression, ExcelExpression)
     indirect case sheet(ExcelExpression, ExcelExpression)
@@ -137,11 +139,11 @@ struct Parser {
                 
             case .open(.squareBracket):
                 _ = tokens.next()
-                let e = result() ?? .empty
-                if tokens.next() != .symbol(.close(.squareBracket)) {
-                    fatalError("Brackets not closed")
+                let list = parseList(separator: .symbol(.comma), close: .symbol(.close(.squareBracket)))
+                if list.count == 1 {
+                    return .structured(list.first!)
                 }
-                return .structured(e)
+                return .structured(.union(list))
                 
                 
             default:

@@ -147,6 +147,16 @@ final class ParserTest: XCTestCase {
             .table("DeptSales", .structured(.range(.ref("Sales Person"), .ref("Region")))),
             from: "DeptSales[[Sales Person]:[Region]]")
     }
+
+    func testComplexTableReference() {
+        assertResult(
+            .table("DeptSales", .structured(.union([.ref("#All"), .ref("Sales Amount")]))),
+            from: "DeptSales[[#All],[Sales Amount]]")
+        
+        assertResult(
+            .table("DeptSales", .structured(.union([.ref("#All"), .range(.ref("Sales Amount"), .ref("% Commission"))]))),
+        from: "DeptSales[[#All],[Sales Amount]:[% Commission]]")
+    }
     
     private func assertResult(_ expected: ExcelExpression?, from: String, file: StaticString = #file,
                               line: UInt = #line) {
