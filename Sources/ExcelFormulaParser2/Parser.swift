@@ -31,7 +31,22 @@ struct Parser {
     }
     
     mutating func result() -> ExcelExpression? {
-        guard var parsed = parseNextToken() else { return nil }
+        var firstExpression = parseNextToken()
+        if firstExpression == nil {
+            if tokens.peek() == .symbol(.maths(.subtract)) {
+                _ = tokens.next()
+                if let e = parseNextToken() {
+                    firstExpression = .maths([.subtract(e)])
+                } else {
+                    return nil
+                }
+            } else {
+                return nil
+            }
+        }
+        guard var parsed = firstExpression else {
+            return nil
+        }
         while let next = parseJoin(left: parsed) {
             parsed = next
         }
@@ -88,8 +103,8 @@ struct Parser {
                 return nil
                 
             case .maths(.subtract):
-                _ = tokens.next()
-                if case let .number(n) = tokens.peek() {
+                if case let .number(n) = tokens.peekFurther() {
+                    _ = tokens.next()
                     _ = tokens.next()
                     return .number(-n)
                 }

@@ -59,6 +59,14 @@ final class ParserTest: XCTestCase {
             .maths([.percent(.number(100))]),
             from: "100%"
         )
+        assertResult(
+            .maths([.percent(.brackets(.maths([.start(.number(10)), .add(.number(20))])))]),
+            from: "(10+20)%"
+        )
+    }
+    
+    func testNegativePrefix() {
+        assertResult(.maths([.subtract(.brackets(.maths([.start(.number(1)), .add(.number(3))])))]), from: "-(1+3)")
     }
     
     func testFunctions() {
