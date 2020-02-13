@@ -96,6 +96,14 @@ final class TokenizerTest: XCTestCase {
         ], from: "['['#OfItems''']]")
     }
     
+    func testEscapingInEscapedStructuredTableReferences() {
+        assertTokens([
+            .symbol(.open(.squareBracket)),
+            .literal("[ #! :OfItems']"),
+            .symbol(.close(.squareBracket)),
+        ], from: "[['[ #! :OfItems''']]]")
+    }
+    
     private func assertTokens(_ expected: [ExcelToken], from: String, file: StaticString = #file,
                               line: UInt = #line) {
         let result = Array(Tokenizer(from))

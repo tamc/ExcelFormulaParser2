@@ -206,8 +206,21 @@ struct Tokenizer: Sequence, IteratorProtocol {
         advanceEnd() // Skip first [
         advanceStart()  // Skip first [
         
-        extendToken(while: .escapedStructuredChars)
-        let string = token
+        var escapeCharacters = [String.Index]()
+        outerloop: while canAdvanceEnd() {
+            switch nextCharacter {
+            case "]":
+                break outerloop
+            case "'":
+                escapeCharacters.append(te)
+                advanceEnd(by: 2)
+            default:
+                advanceEnd()
+            }
+        }
+        
+        let string = token.havingRemoved(baseIndexes: escapeCharacters)
+        
         if canAdvanceEnd() {
             advanceEnd() // Skip closing ]
         }
