@@ -25,7 +25,9 @@ final class ParserTest: XCTestCase {
         assertResult(.maths(.number(1), [.add(.number(1)), .subtract(.number(2))]), from: "1+ 1-2")
         
         assertResult(.maths(.number(1), [.multiply(.number(2))]), from: "1*2")
-        
+    }
+    
+    func testArithmeticPrecedent() {
         assertResult(
             .maths(.number(1), [.add(.maths(.number(3), [.multiply(.number(2)), .divide(.number(5))]))]),
             from: "1+3*2/5")
@@ -33,7 +35,6 @@ final class ParserTest: XCTestCase {
         assertResult(
             .maths(.maths(.number(3), [.multiply(.number(2)), .divide(.number(5))]), [.subtract(.number(1))]),
             from: "3*2/5-1")
-        
     }
     
     
@@ -68,6 +69,9 @@ final class ParserTest: XCTestCase {
         let tokens = Tokenizer(from)
         var parser = Parser(tokens)
         let result = parser.result()
+        if result != expected {
+            dump(result)
+        }
         XCTAssertEqual(expected, result, "Parsing \(from)", file: file, line: line)
     }
 }

@@ -5,8 +5,7 @@ import Foundation
  */
 struct PeekableIterator<Element>: IteratorProtocol {
     private var i: AnyIterator<Element>
-    private var peeked: Element? = nil
-    private var isPeeked = false
+    private var peeked = Queue<Element>()
     private var isFinished = false
     
     init<I: IteratorProtocol>(_ base: I) where I.Element == Element {
@@ -14,9 +13,8 @@ struct PeekableIterator<Element>: IteratorProtocol {
     }
     
     mutating func next() -> Element? {
-        if isPeeked {
-            isPeeked = false
-            return peeked
+        if peeked.isEmpty == false {
+            return peeked.next()
         }
         if isFinished {
             return nil
@@ -25,11 +23,28 @@ struct PeekableIterator<Element>: IteratorProtocol {
     }
     
     mutating func peek() -> Element? {
-        if isPeeked == false {
-            peeked = i.next()
-            isPeeked = true
-            isFinished = (peeked == nil)
+        if peeked.isEmpty, isFinished == false {
+            if let n = i.next() {
+                peeked.append(n)
+            } else {
+                isFinished = true
+            }
         }
-        return peeked
+        return peeked.peekFirst()
+    }
+    
+    mutating func peekFurther() -> Element? {
+        if peeked.isEmpty {
+            _ = peek()
+        }
+        if peeked.count == 1, isFinished == false {
+            if let n = i.next() {
+                peeked.append(n)
+            } else {
+                isFinished = true
+            }
+        }
+        if peeked.count < 2 { return nil }
+        return peeked.peekLast()
     }
 }
