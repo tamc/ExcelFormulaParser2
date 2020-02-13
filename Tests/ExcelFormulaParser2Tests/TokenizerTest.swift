@@ -42,19 +42,31 @@ final class TokenizerTest: XCTestCase {
         assertTokens([.symbol(.maths(.multiply))], from: "*")
         assertTokens([.symbol(.maths(.divide))], from: "/")
         assertTokens([.symbol(.maths(.power))], from: "^")
+        
         assertTokens([.symbol(.open(.bracket))], from: "(")
         assertTokens([.symbol(.close(.bracket))], from: ")")
         assertTokens([.symbol(.open(.squareBracket))], from: "[")
         assertTokens([.symbol(.close(.squareBracket))], from: "]")
+        
         assertTokens([.symbol(.bang)], from: "!")
         assertTokens([.symbol(.colon)], from: ":")
         assertTokens([.symbol(.comma)], from: ",")
         assertTokens([.symbol(.ampersand)], from: "&")
         assertTokens([.symbol(.percent)], from: "%")
-
+        
+        assertTokens([.symbol(.comparison(.equal))], from: "=")
+        assertTokens([.symbol(.comparison(.lessThan))], from: "<")
+        assertTokens([.symbol(.comparison(.greaterThan))], from: ">")
+        
         /// Strings
         assertTokens([.string("Hello world")], from: "\"Hello world\"")
         assertTokens([.string("Hello \"world")], from: "\"Hello \"\"world\"")
+    }
+    
+    func testTwoCharacterComparisons() {
+        assertTokens([.symbol(.comparison(.notEqual))], from: "<>")
+        assertTokens([.symbol(.comparison(.lessThanOrEqual))], from: "<=")
+        assertTokens([.symbol(.comparison(.greaterThanOrEqual))], from: ">=")
     }
     
     func testBasicSequence() {

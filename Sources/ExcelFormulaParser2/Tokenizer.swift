@@ -21,6 +21,7 @@ enum ExcelSymbol: Hashable {
     case maths(ExcelMathOperator)
     case open(ExcelOpenClosable)
     case close(ExcelOpenClosable)
+    case comparison(ExcelComparison)
     case ampersand
     case comma
     case bang
@@ -34,6 +35,15 @@ enum ExcelMathOperator: Hashable {
     case multiply
     case divide
     case power
+}
+
+enum ExcelComparison: Hashable {
+    case equal
+    case notEqual
+    case lessThan
+    case greaterThan
+    case lessThanOrEqual
+    case greaterThanOrEqual
 }
 
 enum ExcelOpenClosable: Hashable {
@@ -153,6 +163,33 @@ struct Tokenizer: Sequence, IteratorProtocol {
         case ",": result = .comma
         case "&": result = .ampersand
         case "%": result = .percent
+            
+        case "=": result = .comparison(.equal)
+        case "<":
+            result = .comparison(.lessThan)
+            if canAdvanceEnd() {
+                switch nextCharacter {
+                case ">":
+                    advanceEnd()
+                    result = .comparison(.notEqual)
+                case "=":
+                    advanceEnd()
+                    result = .comparison(.lessThanOrEqual)
+                default:
+                    break
+                }
+            }
+        case ">":
+            result = .comparison(.greaterThan)
+            if canAdvanceEnd() {
+                switch nextCharacter {
+                case "=":
+                    advanceEnd()
+                    result = .comparison(.greaterThanOrEqual)
+                default:
+                    break
+                }
+            }
 
         default:
             fail("Could not convert \(token) into an ExcelSymbol")
@@ -334,7 +371,7 @@ private func ~= (pattern: CharacterSet, value: Character) -> Bool {
 
 extension CharacterSet {
     static let excelError = CharacterSet(charactersIn: "#REF!#NAME?#VALUE!#DIV/0!#N/A#NUM!")
-    static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&%")
+    static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&%=<>")
     static let excelLiteralFirstCharacter = alphanumerics.union(CharacterSet(charactersIn: "_$"))
     static let excelLiteral = alphanumerics.union(CharacterSet(charactersIn: "_.$"))
     static let decimalPoint = CharacterSet(charactersIn: ".")
