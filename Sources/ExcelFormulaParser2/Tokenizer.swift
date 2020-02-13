@@ -25,6 +25,7 @@ enum ExcelSymbol: Hashable {
     case comma
     case bang
     case colon
+    case percent
 }
 
 enum ExcelMathOperator: Hashable {
@@ -115,6 +116,7 @@ struct Tokenizer: Sequence, IteratorProtocol {
         case ":": result = .colon
         case ",": result = .comma
         case "&": result = .ampersand
+        case "%": result = .percent
 
         default:
             fail("Could not convert \(token) into an ExcelSymbol")
@@ -251,7 +253,7 @@ private func ~= (pattern: CharacterSet, value: Character) -> Bool {
 
 extension CharacterSet {
     static let excelError = CharacterSet(charactersIn: "#REF!#NAME?#VALUE!#DIV/0!#N/A#NUM!")
-    static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&")
+    static let excelSymbols = CharacterSet(charactersIn: "+-*/^()[]!:,&%")
     static let excelLiteralFirstCharacter = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
     static let excelLiteral = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_.$"))
     static let decimalPoint = CharacterSet(charactersIn: ".")

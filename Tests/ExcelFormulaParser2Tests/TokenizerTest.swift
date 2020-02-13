@@ -35,7 +35,7 @@ final class TokenizerTest: XCTestCase {
         assertTokens([.number(1.1e-1)], from: "1.1E-1")
         assertTokens([.number(1e-1)], from: "1E-1")
         assertTokens([.number(1e10)], from: "1E10")
-        
+    
         /// Symbols
         assertTokens([.symbol(.maths(.add))], from: "+")
         assertTokens([.symbol(.maths(.subtract))], from: "-")
@@ -50,7 +50,8 @@ final class TokenizerTest: XCTestCase {
         assertTokens([.symbol(.colon)], from: ":")
         assertTokens([.symbol(.comma)], from: ",")
         assertTokens([.symbol(.ampersand)], from: "&")
-        
+        assertTokens([.symbol(.percent)], from: "%")
+
         /// Strings
         assertTokens([.string("Hello world")], from: "\"Hello world\"")
         assertTokens([.string("Hello \"\"world",containsEscapeSequence: true)], from: "\"Hello \"\"world\"")

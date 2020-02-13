@@ -37,7 +37,6 @@ final class ParserTest: XCTestCase {
             from: "3*2/5-1")
     }
     
-    
     func testFunctions() {
         assertResult(.function(name: "NOW"), from: "NOW()")
     }
