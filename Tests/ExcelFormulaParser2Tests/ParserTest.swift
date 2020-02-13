@@ -128,7 +128,24 @@ final class ParserTest: XCTestCase {
                 )
         ),
         from: "Sheet1!A1:B3 A1 A1:B3")
-        
+    }
+    
+    func testLocalTableReference() {
+        assertResult(
+            .structured(.ref("Sales")),
+            from: "[Sales]")
+        assertResult(
+            .structured(.range(.ref("Sales Person"), .ref("Region") )),
+            from: "[[Sales Person]:[Region]]")
+    }
+    
+    func testRemoteTableReference() {
+        assertResult(
+            .table("DeptSales", .structured(.ref("Sales"))),
+            from: "DeptSales[Sales]")
+        assertResult(
+            .table("DeptSales", .structured(.range(.ref("Sales Person"), .ref("Region")))),
+            from: "DeptSales[[Sales Person]:[Region]]")
     }
     
     private func assertResult(_ expected: ExcelExpression?, from: String, file: StaticString = #file,

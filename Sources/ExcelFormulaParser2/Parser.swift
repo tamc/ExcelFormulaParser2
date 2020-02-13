@@ -13,6 +13,8 @@ enum ExcelExpression: Hashable {
     case ref(String)
     indirect case range(ExcelExpression, ExcelExpression)
     indirect case sheet(ExcelExpression, ExcelExpression)
+    indirect case structured(ExcelExpression)
+    indirect case table(String, ExcelExpression)
 }
 
 enum MathsOperation: Hashable {
@@ -90,6 +92,13 @@ struct Parser {
                 }
                 return .sheet(.ref(String(s)), ref)
             }
+            
+            if case .symbol(.open(.squareBracket)) = tokens.peek() {
+                guard let ref = parseNextToken() else {
+                    fatalError("Non parsable structured table ref?")
+                }
+                return .table(String(s), ref)
+            }
 
             return .ref(String(s))
 
@@ -125,6 +134,14 @@ struct Parser {
                     fatalError("Brackets not closed")
                 }
                 return .brackets(e)
+                
+            case .open(.squareBracket):
+                _ = tokens.next()
+                let e = result() ?? .empty
+                if tokens.next() != .symbol(.close(.squareBracket)) {
+                    fatalError("Brackets not closed")
+                }
+                return .structured(e)
                 
                 
             default:
