@@ -103,7 +103,7 @@ struct Tokenizer: Sequence, IteratorProtocol {
         // Different escaping rules inside structured table references
         switch nextCharacter {
         case "[": return excelEscapedStructuredLiteral()
-        case CharacterSet.unescapedStructuredChars: return excelStructuredLiteral()
+        case CharacterSet.unescapedStructuredFirstChars: return excelStructuredLiteral()
         case CharacterSet.excelSymbols: return symbol()
         default:
             fail("Could not identify first character of the token")
@@ -184,10 +184,22 @@ struct Tokenizer: Sequence, IteratorProtocol {
     }
     
     mutating private func excelStructuredLiteral() -> ExcelToken? {
-        extendToken(while: .unescapedStructuredChars)
+        let c = CharacterSet.unescapedStructuredSubsequentChars
+        var containsEscapeSequence = false
+        outerloop: while canAdvanceEnd() {
+            switch nextCharacter {
+            case c:
+                advanceEnd()
+            case "'":
+                advanceEnd(by: 2)
+                containsEscapeSequence = true
+            default:
+                break outerloop
+            }
+        }
         let string = token
         startNextToken()
-        return .literal(string, containsEscapeSequence: false)
+        return .literal(string, containsEscapeSequence: containsEscapeSequence)
     }
     
     mutating private func excelEscapedStructuredLiteral() -> ExcelToken? {
@@ -315,7 +327,10 @@ extension CharacterSet {
     static let decimalPoint = CharacterSet(charactersIn: ".")
     static let decimalExponent = CharacterSet(charactersIn: "eE")
     static let decimalPlusMinus = CharacterSet(charactersIn: "+-")
-    static let unescapedStructuredChars = alphanumerics.union(CharacterSet(charactersIn: " "))
+    
+    static let unescapedStructuredFirstChars = alphanumerics.union(CharacterSet(charactersIn: "'"))
+    static let unescapedStructuredSubsequentChars = alphanumerics.union(CharacterSet(charactersIn: " "))
+    
     static let escapedStructuredChars = alphanumerics.union(CharacterSet(charactersIn: " #,:.\"{}$^&*+=-<>/"))
 }
 
