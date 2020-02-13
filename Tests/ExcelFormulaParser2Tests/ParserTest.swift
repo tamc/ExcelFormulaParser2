@@ -100,6 +100,12 @@ final class ParserTest: XCTestCase {
     
     func testRangeReference() {
         assertResult(.range(.ref("A1"), .ref("B3")), from: "A1:B3")
+        assertResult(
+            .range(
+                .function(name: "OFFSET", arguments: .list([.ref("A1"), .number(1), .number(1)])),
+                .function(name: "OFFSET", arguments: .list([.ref("A1"), .number(2), .number(3)]))
+            ),
+            from: "OFFSET(A1,1,1):OFFSET(A1,2,3)")
     }
     
     func testSheetReference() {
@@ -108,7 +114,12 @@ final class ParserTest: XCTestCase {
         assertResult(.range(.sheet(.ref("Sheet1"), .ref("A1")), .ref("B3")), from: "Sheet1!A1:B3")
         assertResult(.range(.sheet(.ref("Sheet1"), .ref("A1")), .sheet(.ref("Sheet1"), .ref("B3"))), from: "Sheet1!A1:Sheet1!B3")
         
+        // FIXME: Not sure about this one
         assertResult(.range(.range(.ref("Sheet1"), .sheet(.ref("Sheet2"), .ref("A1"))), .ref("B3")), from: "Sheet1:Sheet2!A1:B3")
+    }
+    
+    func testSheetIntersection() {
+        
     }
     
     private func assertResult(_ expected: ExcelExpression?, from: String, file: StaticString = #file,
