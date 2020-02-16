@@ -199,20 +199,20 @@ struct Parser {
     mutating func parseOperator(_ left: ExcelExpression) -> ExcelExpression {
         var list: [MathsOperation] = [.start(left)]
         
+        let precedence = tokens.peek()!.precedence
+        
         guard var firstOp = tokens.next()?.excelMathOperator else {
             fatalError("Missing the first operator")
         }
-        
-        let precedence = firstOp.precedence
         
         while true {
             guard var right = parseNextToken() else {
                 fatalError("Missing the right hand side")
             }
             
-            if let secondOp = tokens.peek()?.excelMathOperator {
-                if secondOp.precedence > precedence {
-                    right = parseOperator(right)
+            if let nextPrecedence = tokens.peek()?.precedence {
+                if nextPrecedence > precedence {
+                    right = parseJoin(left: right) ?? right
                 }
             }
             
@@ -236,19 +236,19 @@ struct Parser {
     
     mutating func parseComparison(_ left: ExcelExpression) -> ExcelExpression {
         
+        let precedence = tokens.peek()!.precedence
+        
         guard let comp = tokens.next()?.excelComparison else {
             fatalError("Missing the comparison operator")
         }
-        
-        let precedence = comp.precedence
-        
+    
         guard var right = parseNextToken() else {
             fatalError("Missing the right hand side")
         }
             
-        if let secondOp = tokens.peek()?.excelMathOperator {
-            if secondOp.precedence > precedence {
-                right = parseOperator(right)
+        if let nextPrecedence = tokens.peek()?.precedence {
+            if nextPrecedence > precedence {
+                right = parseJoin(left: right) ?? right
             }
         }
         
@@ -274,6 +274,42 @@ struct Parser {
             fatalError("No right hand side to ampersand for text join")
         }
         return .textJoin(left, right)
+    }
+}
+
+private extension ExcelToken {
+    var precedence: Int {
+        switch self {
+        case .symbol(let s):
+            return s.precedence
+        default:
+            return 0
+        }
+    }
+}
+
+private extension ExcelSymbol {
+    var precedence: Int {
+        switch self {
+        case .bang:
+            return 2000
+        case .open:
+            return 1000
+        case .close:
+            return 1000
+        case .comma:
+            return 500
+        case .colon:
+            return 400
+        case .percent:
+            return 100
+        case .maths(let m):
+            return m.precedence
+        case .ampersand:
+            return 1
+        case .comparison:
+            return 0
+        }
     }
 }
 
@@ -312,17 +348,11 @@ private extension ExcelMathOperator {
     
     var precedence: Int {
         switch self {
-        case .add: return 1
-        case .subtract: return 1
-        case .divide: return 2
-        case .multiply: return 2
-        case .power: return 3
+        case .add: return 10
+        case .subtract: return 10
+        case .divide: return 20
+        case .multiply: return 20
+        case .power: return 30
         }
-    }
-}
-
-private extension ExcelComparison {
-    var precedence: Int {
-        return 0
     }
 }

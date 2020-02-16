@@ -110,6 +110,49 @@ final class ParserTest: XCTestCase {
         )
     }
     
+    func testComparisonPrecedence() {
+        assertResult(
+            .comparison(
+                .equal,
+                .number(3),
+                .maths([
+                    .start(.number(1)),
+                    .add(.number(2))
+                ])
+            ),
+            from: "3=1+2"
+        )
+        assertResult(
+            .comparison(
+                .equal,
+                .string("AB"),
+                .textJoin(
+                    .string("A"),
+                    .string("B")
+                )
+            ),
+            from: """
+            "AB"="A"&"B"
+            """
+        )
+    }
+    
+    func testStringJoinPrecedence() {
+        assertResult(
+            .textJoin(
+                .maths([
+                    .start(.number(1)),
+                    .add(.number(2))
+                ]),
+                .maths([
+                    .start(.number(3)),
+                    .multiply(.number(4))
+                ])
+            ),
+            from: "1+2&3*4"
+        )
+    }
+    
     func testFunctions() {
         assertResult(.function(name: "NOW"), from: "NOW()")
     }

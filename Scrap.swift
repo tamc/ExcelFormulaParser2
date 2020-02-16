@@ -6,5 +6,3 @@
 //
 
 import Foundation
-
-Optional(.table("DeptSales", .structured(.union([.ref("#All"), .ref("Sales Amount")]))))
