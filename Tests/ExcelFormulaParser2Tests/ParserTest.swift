@@ -83,6 +83,33 @@ final class ParserTest: XCTestCase {
         assertResult(.textJoin(.string("Hello"), .string("World")), from: "\"Hello\"&\"World\"")
     }
     
+    func testComparisons() {
+        assertResult(
+            .comparison(.equal, .number(1), .number(2)),
+            from: "1=2"
+        )
+        assertResult(
+            .comparison(.notEqual, .number(1), .number(2)),
+            from: "1<>2"
+        )
+        assertResult(
+            .comparison(.greaterThan, .number(1), .number(2)),
+            from: "1>2"
+        )
+        assertResult(
+            .comparison(.lessThan, .number(1), .number(2)),
+            from: "1<2"
+        )
+        assertResult(
+            .comparison(.greaterThanOrEqual, .number(1), .number(2)),
+            from: "1>=2"
+        )
+        assertResult(
+            .comparison(.lessThanOrEqual, .number(1), .number(2)),
+            from: "1<=2"
+        )
+    }
+    
     func testFunctions() {
         assertResult(.function(name: "NOW"), from: "NOW()")
     }

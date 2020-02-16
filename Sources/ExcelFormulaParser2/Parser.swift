@@ -8,6 +8,7 @@ enum ExcelExpression: Hashable {
     case boolean(Bool)
     indirect case brackets(ExcelExpression)
     indirect case function(name: String, arguments: [ExcelExpression] = [])
+    indirect case comparison(ExcelComparison, ExcelExpression, ExcelExpression)
     indirect case maths([MathsOperation])
     indirect case intersection(ExcelExpression, ExcelExpression)
     /// Union in Excel terminology is NOT the same as a Set union, because dulicates are _not_ eliminated
@@ -70,6 +71,9 @@ struct Parser {
         if next == .symbol(.percent) {
             _ = tokens.next()
             return .maths([.percent(left)])
+        }
+        if next.isExcelComparison {
+            return parseComparison(left)
         }
         return parseIntersection(left)
     }
@@ -230,6 +234,27 @@ struct Parser {
         return .maths(list)
     }
     
+    mutating func parseComparison(_ left: ExcelExpression) -> ExcelExpression {
+        
+        guard let comp = tokens.next()?.excelComparison else {
+            fatalError("Missing the comparison operator")
+        }
+        
+        let precedence = comp.precedence
+        
+        guard var right = parseNextToken() else {
+            fatalError("Missing the right hand side")
+        }
+            
+        if let secondOp = tokens.peek()?.excelMathOperator {
+            if secondOp.precedence > precedence {
+                right = parseOperator(right)
+            }
+        }
+        
+        return .comparison(comp, left, right)
+    }
+    
     mutating func parseRange(_ left: ExcelExpression) -> ExcelExpression {
         _ = tokens.next()
         guard let right = parseNextToken() else {
@@ -263,6 +288,17 @@ private extension ExcelToken {
     }
 }
 
+private extension ExcelToken {
+    var excelComparison: ExcelComparison? {
+        guard case let .symbol(.comparison(result)) = self else { return nil }
+        return result
+    }
+        
+    var isExcelComparison: Bool {
+        return (excelComparison != nil)
+    }
+}
+
 private extension ExcelMathOperator {
     func toMathOperator(_ e: ExcelExpression) -> MathsOperation {
         switch self {
@@ -282,5 +318,11 @@ private extension ExcelMathOperator {
         case .multiply: return 2
         case .power: return 3
         }
+    }
+}
+
+private extension ExcelComparison {
+    var precedence: Int {
+        return 0
     }
 }
