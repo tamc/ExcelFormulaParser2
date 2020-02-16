@@ -8,7 +8,7 @@ enum ExcelToken: Hashable {
     case symbol(ExcelSymbol)
 }
 
-enum ExcelError: String, Hashable {
+public enum ExcelError: String, Hashable {
     case ref = "#REF!"
     case name = "#NAME?"
     case value = "#VALUE!"
@@ -37,7 +37,7 @@ enum ExcelMathOperator: Hashable {
     case power
 }
 
-enum ExcelComparison: Hashable {
+public enum ExcelComparison: Hashable {
     case equal
     case notEqual
     case lessThan

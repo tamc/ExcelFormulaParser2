@@ -1,6 +1,6 @@
 import Foundation
 
-enum ExcelExpression: Hashable {
+public enum ExcelExpression: Hashable {
     case empty
     case string(String)
     case error(ExcelError)
@@ -22,7 +22,7 @@ enum ExcelExpression: Hashable {
 
 }
 
-enum MathsOperation: Hashable {
+public enum MathsOperation: Hashable {
     case start(ExcelExpression)
     case add(ExcelExpression)
     case subtract(ExcelExpression)
@@ -32,7 +32,7 @@ enum MathsOperation: Hashable {
     case percent(ExcelExpression)
 }
 
-struct Parser {
+public struct Parser {
     private var tokens: PeekableIterator<ExcelToken>
     
     init<S: IteratorProtocol>(_ tokens: S) where S.Element == ExcelToken {
@@ -57,7 +57,7 @@ struct Parser {
     }
     
     
-    mutating func parseJoin(left: ExcelExpression) -> ExcelExpression? {
+    mutating private func parseJoin(left: ExcelExpression) -> ExcelExpression? {
         guard let next = tokens.peek() else { return nil }
         if next == .symbol(.colon) {
             return parseRange(left)
@@ -78,7 +78,7 @@ struct Parser {
         return parseIntersection(left)
     }
     
-    mutating func parseNextToken() -> ExcelExpression? {
+    mutating private func parseNextToken() -> ExcelExpression? {
         guard let token = tokens.peek() else { return nil }
         switch token {
         case .literal(let s):
@@ -162,7 +162,7 @@ struct Parser {
         }
     }
     
-    mutating func parseList(separator: ExcelToken, close: ExcelToken) -> [ExcelExpression] {
+    mutating private func parseList(separator: ExcelToken, close: ExcelToken) -> [ExcelExpression] {
         var parsedExpression = false
         var list = [ExcelExpression]()
         while true {
@@ -196,7 +196,7 @@ struct Parser {
         }
     }
     
-    mutating func parseOperator(_ left: ExcelExpression) -> ExcelExpression {
+    mutating private func parseOperator(_ left: ExcelExpression) -> ExcelExpression {
         var list: [MathsOperation] = [.start(left)]
         
         let precedence = tokens.peek()!.precedence
@@ -234,7 +234,7 @@ struct Parser {
         return .maths(list)
     }
     
-    mutating func parseComparison(_ left: ExcelExpression) -> ExcelExpression {
+    mutating private func parseComparison(_ left: ExcelExpression) -> ExcelExpression {
         
         let precedence = tokens.peek()!.precedence
         
@@ -255,7 +255,7 @@ struct Parser {
         return .comparison(comp, left, right)
     }
     
-    mutating func parseRange(_ left: ExcelExpression) -> ExcelExpression {
+    mutating private func parseRange(_ left: ExcelExpression) -> ExcelExpression {
         _ = tokens.next()
         guard let right = parseNextToken() else {
             fatalError("No right hand side to colon")
@@ -263,12 +263,12 @@ struct Parser {
         return .range(left, right)
     }
     
-    mutating func parseIntersection(_ left: ExcelExpression) -> ExcelExpression? {
+    mutating private func parseIntersection(_ left: ExcelExpression) -> ExcelExpression? {
         guard let right = result() else { return nil }
         return .intersection(left, right)
     }
     
-    mutating func parseTextJoin(_ left: ExcelExpression) -> ExcelExpression {
+    mutating private func parseTextJoin(_ left: ExcelExpression) -> ExcelExpression {
         _ = tokens.next()
         guard let right = result() else {
             fatalError("No right hand side to ampersand for text join")
