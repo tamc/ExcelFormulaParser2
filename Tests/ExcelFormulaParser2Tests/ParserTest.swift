@@ -2,6 +2,14 @@ import XCTest
 @testable import ExcelFormulaParser2
 
 final class ParserTest: XCTestCase {
+    
+    func testCanInitializeWithString() {
+        let string = "1"
+        var withString = Parser(string)
+        var withoutString = Parser(Tokenizer(string))
+        XCTAssertEqual(withString.result(), withoutString.result())
+    }
+    
     func testBasicTypes() {
         assertResult(nil, from: "")
         assertResult(.number(1), from: "1")

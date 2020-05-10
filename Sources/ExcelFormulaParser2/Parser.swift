@@ -35,6 +35,10 @@ public enum MathsOperation: Hashable {
 public struct Parser {
     private var tokens: PeekableIterator<ExcelToken>
     
+    init(_ string: String) {
+        self.init(Tokenizer(string))
+    }
+    
     init<S: IteratorProtocol>(_ tokens: S) where S.Element == ExcelToken {
         self.tokens = PeekableIterator(tokens)
     }
