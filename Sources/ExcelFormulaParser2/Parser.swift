@@ -35,7 +35,7 @@ public enum MathsOperation: Hashable {
 public struct Parser {
     private var tokens: PeekableIterator<ExcelToken>
     
-    init(_ string: String) {
+    public init(_ string: String) {
         self.init(Tokenizer(string))
     }
     
@@ -43,7 +43,7 @@ public struct Parser {
         self.tokens = PeekableIterator(tokens)
     }
     
-    mutating func result() -> ExcelExpression? {
+    mutating public func result() -> ExcelExpression? {
         var firstExpression = parseNextToken()
         if firstExpression == nil {
             guard tokens.peek() == .symbol(.maths(.subtract)) else { return nil }
