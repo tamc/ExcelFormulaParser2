@@ -6,6 +6,7 @@ public enum ExcelExpression: Hashable {
     case error(ExcelError)
     case number(Decimal)
     case boolean(Bool)
+    case ref(String)
     indirect case brackets(ExcelExpression)
     indirect case function(name: String, arguments: [ExcelExpression] = [])
     indirect case comparison(ExcelComparison, ExcelExpression, ExcelExpression)
@@ -14,7 +15,6 @@ public enum ExcelExpression: Hashable {
     /// Union in Excel terminology is NOT the same as a Set union, because dulicates are _not_ eliminated
     indirect case union([ExcelExpression])
     indirect case textJoin(ExcelExpression, ExcelExpression)
-    case ref(String)
     indirect case range(ExcelExpression, ExcelExpression)
     indirect case sheet(ExcelExpression, ExcelExpression)
     indirect case structured(ExcelExpression)
