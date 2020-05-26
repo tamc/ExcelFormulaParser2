@@ -1,25 +1,29 @@
 import Foundation
 
 public enum ExcelExpression: Hashable {
+    // These are the various value types
     case empty
     case string(String)
     case error(ExcelError)
     case number(Decimal)
     case boolean(Bool)
     case ref(String)
+    
+    // These are the various operations that can be done
     indirect case brackets(ExcelExpression)
     indirect case function(name: String, arguments: [ExcelExpression] = [])
     indirect case comparison(ExcelComparison, ExcelExpression, ExcelExpression)
     indirect case maths([MathsOperation])
+    indirect case textJoin(ExcelExpression, ExcelExpression)
+    
+    // These are the various sorts of reference
     indirect case intersection(ExcelExpression, ExcelExpression)
     /// Union in Excel terminology is NOT the same as a Set union, because dulicates are _not_ eliminated
     indirect case union([ExcelExpression])
-    indirect case textJoin(ExcelExpression, ExcelExpression)
     indirect case range(ExcelExpression, ExcelExpression)
     indirect case sheet(ExcelExpression, ExcelExpression)
     indirect case structured(ExcelExpression)
     indirect case table(String, ExcelExpression)
-
 }
 
 public enum MathsOperation: Hashable {
